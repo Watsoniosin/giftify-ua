@@ -1,18 +1,44 @@
 <script type="module">
+  // === ЗАХИСТ ВІД БІЛОГО ЕКРАНУ ===
+  function initTelegramWebApp() {
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+      return window.Telegram.WebApp;
+    } else {
+      // Для тесту в браузері
+      console.warn('Telegram WebApp not found — using mock');
+      window.Telegram = {
+        WebApp: {
+          initData: 'mock_init_data',
+          initDataUnsafe: { user: { id: 999, first_name: 'Гість', username: 'guest' } },
+          ready: () => console.log('Mock WebApp ready'),
+          expand: () => console.log('Mock WebApp expand'),
+          MainButton: {
+            setText: (text) => { this.text = text; return this; },
+            onClick: (cb) => { this.clickHandler = cb; return this; },
+            show: () => console.log('MainButton shown'),
+            text: '',
+            clickHandler: null
+          }
+        }
+      };
+      return window.Telegram.WebApp;
+    }
+  }
+
+  const tg = initTelegramWebApp();
+  const tgUser = tg.initDataUnsafe?.user || { id: 999, first_name: 'Гість', username: 'guest' };
+
+  // === ТВІЙ КОД (ЗБЕРЕЖЕНО) ===
   import { User } from './src/domain/User.js';
   import { GetBalanceUseCase } from './src/application/GetBalanceUseCase.js';
   import { MockBalanceGateway } from './src/infrastructure/gateways/MockBalanceGateway.js';
   import { HttpGiftGateway } from './src/infrastructure/gateways/HttpGiftGateway.js';
 
-  const tg = window.Telegram.WebApp;
-  tg.ready(); tg.expand();
-
-  // ЗАХИСТ ВІД undefined
-  const tgUser = tg.initDataUnsafe?.user || { id: 999, first_name: 'Гість', username: 'guest' };
   const user = new User(tgUser.id, tgUser.first_name, tgUser.username);
   document.getElementById('username').textContent = user.getDisplayName();
 
-  // === БАЛАНС ===
   const balanceGateway = new MockBalanceGateway('777.77');
   const useCase = new GetBalanceUseCase(balanceGateway);
 
@@ -29,7 +55,6 @@
   tg.MainButton.setText('Оновити').onClick(updateBalance).show();
   updateBalance();
 
-  // === АНІМАЦІЯ GIFT (ТІЛЬКИ .tgs) ===
   const giftGateway = new HttpGiftGateway();
   const GIFT_ID = 'AstralShard-21';
 
@@ -52,6 +77,10 @@
     }
   }
 
+  loadGift();
+</script>
+
   // Запускаємо анімацію
   loadGift();
+
 </script>
